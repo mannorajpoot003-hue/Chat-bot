@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <title> My Chat App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      height: 100vh;
+    }
+
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 28%;
+      background: #ffffff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+    }
+
+    .user-item {
+      padding: 12px 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      transition: background 0.2s;
+    }
+
+    .user-item a {
+      text-decoration: none;
+      color: #111;
+      font-weight: 500;
+    }
+
+    .user-item:hover {
+      background: #f7f7f7;
+    }
+
+    .chat-panel {
+      width: 72%;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .chat-header {
+      background: #ffffff;
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .chat-header h2 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .chat-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      padding-bottom: 130px;
+      background: #e5ddd5;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+
+    .message {
+      display: flex;
+      width: 100%;
+      margin-bottom: 5px;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .message.sent {
+      justify-content: flex-end;
+    }
+
+    .message.received {
+      justify-content: flex-start;
+    }
+
+
+    .bubble {
+      padding: 6px 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      position: relative;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .message .meta {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .chat-footer {
+      padding: 16px;
+      background: #ffffff;
+      border-top: 1px solid #ddd;
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+
+    .chat-footer form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-footer input[type="text"] {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    .chat-footer button {
+      padding: 12px 22px;
+      border: none;
+      border-radius: 20px;
+      background: #128c7e;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .chat-footer button:hover {
+      background: #0f7b6e;
+    }
+  </style>
+</head>
+
+<body>
+
+
+  <div class="app-shell">
+    <div class="sidebar">
+      <h3>Rooms</h3>
+      <div class="list-group mb-3">
+        {% for room in rooms %}
+          <a href="{% url 'room_chat' room.id %}" class="list-group-item list-group-item-action d-flex align-items-center p-2" style="border-radius:8px;">
+            <div class="flex-grow-1">{{ room.name }}</div>
+          </a>
+        {% empty %}
+          <p class="text-muted">No rooms yet.</p>
+        {% endfor %}
+      </div>
+      <a href="{% url 'create_room' %}" class="btn btn-success mb-3">Create Room</a>
+
+      <h3>Users</h3>
+      {% for user in users %}
+      {% if user != request.user %}
+      <div class="user-item"><a href="{% url 'chat' user.id %}">{{ user.username }}</a></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    
+
+
+<div class="chat-panel">
+      {% if receiver %}
+      <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2>Chat with {{ receiver.username }}</h2>
+          <p style="margin: 0; color: #666; font-size: 0.95rem;">Logged in as {{ request.user.username }}</p>
+        </div>
+        <a href="{% url 'logout' %}"
+          style="text-decoration: none; color: #128c7e; border: 1px solid #128c7e; padding: 8px 14px; border-radius: 20px;">Logout</a>
+      </div> 
+
+
+
+
+
+
+
+
+    <div class="chat-content">
+      <div class="messages">
+        {% for msg in messages %}
+        <div class="message {% if msg.sender == request.user %}sent{% else %}received{% endif %}"
+          style="display: flex; justify-content: {% if msg.sender == request.user %}flex-end{% else %}flex-start{% endif %};">
+
+          <div
+            style="background: {% if msg.sender == request.user %}#dcf8c6{% else %}#ffffff{% endif %}; padding: 8px 12px; border-radius: 10px; position: relative; max-width: 70%; min-width: 100px;">
+
+            <div style="margin-bottom: 4px;">
+              {% if not msg.is_deleted %}
+              {{ msg.content }}
+              {% if msg.is_edited %}<small style="font-size: 0.6rem; color: #888;">(edited)</small>{% endif %}
+              {% else %}
+              <i style="color: #888; font-size: 0.85rem; white-space: nowrap; display: inline-block;">
+                This message was deleted
+              </i>
+              {% endif %}
+            </div>
+
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #888; margin-top: 2px;">
+              <span>{{ msg.timestamp|date:"H:i" }}</span>
+
+              {% if msg.sender == request.user and not msg.is_deleted %}
+              <div class="dropdown" style="cursor: pointer; margin-left: 10px; font-weight: bold;">
+                <span onclick="toggleMenu(event, this)">⋮</span>
+                <div class="dropdown-menu"
+                  style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ddd; border-radius: 5px; z-index: 1000; box-shadow: 2px 2px 5px #ccc;">
+                  <a href="{% url 'edit' msg.id %}"
+                    style="display: block; padding: 5px 15px; color: blue; text-decoration: none; font-size: 14px;">Edit</a>
+                  <a href="{% url 'delete' msg.id %}"
+                    style="display: block; padding: 5px 15px; color: red; text-decoration: none; font-size: 14px;">Delete</a>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No messages yet. Start the conversation.</p>
+        {% endfor %}
+      </div>
+
+      <div class="chat-footer">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="text" name="message" placeholder="Type a message..." autocomplete="off" required>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+
+    </div>
+    {% else %}
+    <div class="chat-header">
+      <h2>Select a user to start chat</h2>
+    </div>
+    <div class="chat-content">
+      <div class="messages" style="display:flex; align-items:center; justify-content:center;">
+        <p class="text-muted">Choose a user from the left sidebar to open the chat.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  </div>
+  <script>
+    window.addEventListener('load', function () {
+      const messages = document.querySelector('.messages');
+      if (messages) {
+        messages.scrollTop = messages.scrollHeight;
+      }
+    });
+
+    function toggleMenu(event, element) {
+      event.stopPropagation();
+      const allMenus = document.querySelectorAll('.dropdown-menu');
+      const currentMenu = element.nextElementSibling;
+
+
+      allMenus.forEach(menu => {
+        if (menu !== currentMenu) menu.style.display = 'none';
+      });
+
+
+      currentMenu.style.display = (currentMenu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    window.onclick = function (event) {
+      if (!event.target.matches('.dropdown span')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    }
+  </script>
+
+</body>
+
+</html>

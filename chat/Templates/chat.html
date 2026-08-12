@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="chat-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h4>Contacts</h4>
+        </div>
+        <ul class="contact-list">
+            {% for user in users %}
+                {% if user != request.user %}
+                    <li class="contact-item">
+                        <a href="{% url 'chat' user.id %}">
+                            <div class="avatar">{{ user.username|first|upper }}</div>
+                            <div class="contact-info">
+                                <div class="contact-name">{{ user.username }}</div>
+                            </div>
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <main class="chat-area">
+        <div class="chat-placeholder">
+            <h3>Select a contact to start chatting</h3>
+        </div>
+    </main>
+</div>
+
+{% endblock %}

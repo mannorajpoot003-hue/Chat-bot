@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+
+<!-- manage_members.html -->
+<h2>Manage Members for {{ room.name }}</h2>
+
+<ul>
+    {% for member in room.members.all %}
+        <li>
+            {{ member.username }} 
+            {% if member == room.admin %} (Admin) {% endif %}
+        </li>
+    {% empty %}
+        <li>No members yet.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+<a href="{% url 'add_member' room.id %}">Add New Members</a>
+<br>
+<a href="{% url 'room_chat' room.id %}">Back to Chat</a>
+
+
+
+{% endblock %}

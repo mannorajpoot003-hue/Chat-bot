@@ -204,6 +204,7 @@ def chat(request, receiver_id):
         content = request.POST.get('message')
         if content:
             Message.objects.create(sender=request.user, receiver=receiver, content=content)
+            return redirect('chat', receiver_id=receiver.id)
 
     # Mark incoming messages as read
     Message.objects.filter(

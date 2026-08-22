@@ -16,6 +16,7 @@ class RoomMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    read_by = models.ManyToManyField(User, related_name='read_room_messages', blank=True)
 
 
 class FriendRequest(models.Model):

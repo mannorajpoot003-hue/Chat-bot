@@ -36,14 +36,29 @@
       <!-- Groups / Rooms -->
       <div class="sidebar-section-label">Groups</div>
       {% for r in rooms %}
-        <a href="{% url 'room_chat' r.id %}" class="room-item searchable {% if room and room.id == r.id %}active{% endif %}" data-name="{{ r.name|lower }}">
+        <a href="{% url 'room_chat' r.room.id %}" class="room-item searchable {% if room and room.id == r.room.id %}active{% endif %}" data-name="{{ r.room.name|lower }}">
           <div class="room-avatar">{{ r.emoji }}</div>
           <div class="room-meta">
             <div class="room-top-row">
-              <span class="room-name">{{ r.name }}</span>
-              <span class="room-badge">Group</span>
+              <span class="room-name">{{ r.room.name }}</span>
+              {% if r.last_message %}
+                <span class="room-time" style="font-size: 0.68rem; color: var(--text-muted);">{{ r.last_message.timestamp|date:"H:i" }}</span>
+              {% endif %}
             </div>
-            <div class="room-preview">Group chat</div>
+            <div class="room-bottom-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              {% if r.last_message %}
+                {% if r.last_message.sender == request.user %}
+                  <span class="room-preview you">You: {{ r.last_message.content|truncatechars:22 }}</span>
+                {% else %}
+                  <span class="room-preview">{{ r.last_message.sender.username }}: {{ r.last_message.content|truncatechars:22 }}</span>
+                {% endif %}
+              {% else %}
+                <span class="room-preview">No messages yet</span>
+              {% endif %}
+              {% if r.unread_count > 0 %}
+                <span class="unread-badge">{{ r.unread_count }}</span>
+              {% endif %}
+            </div>
           </div>
         </a>
       {% empty %}

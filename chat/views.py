@@ -85,6 +85,27 @@ def get_contacts_with_meta(current_user):
     return contacts
 
 
+def get_rooms_with_meta(current_user):
+    """Build group room items with last message preview, timestamp, unread badge count, and smart emoji."""
+    rooms = Chatroom.objects.filter(members=current_user)
+    room_list = []
+    for room in rooms:
+        last_msg = room.messages.order_by('-timestamp').first()
+        unread_count = room.messages.exclude(sender=current_user).exclude(read_by=current_user).count()
+        emoji = get_room_emoji(room.id, room.name)
+        room_list.append({
+            'room': room,
+            'last_message': last_msg,
+            'unread_count': unread_count,
+            'emoji': emoji,
+        })
+    room_list.sort(
+        key=lambda x: x['last_message'].timestamp.timestamp() if x['last_message'] else 0,
+        reverse=True
+    )
+    return room_list
+
+
 # ─── Room Chat ─────────────────────────────────────────────────────────────
 @login_required(login_url='login')
 def room_chat(request, room_id):
@@ -94,11 +115,17 @@ def room_chat(request, room_id):
     if request.method == 'POST':
         content = request.POST.get('content')
         if content:
-            RoomMessage.objects.create(room=room, sender=request.user, content=content)
+            msg = RoomMessage.objects.create(room=room, sender=request.user, content=content)
+            msg.read_by.add(request.user)
             return redirect('room_chat', room_id=room.id)
+
+    # Mark unread room messages as read for request.user
+    unread_msgs = room.messages.exclude(sender=request.user).exclude(read_by=request.user)
+    for msg in unread_msgs:
+        msg.read_by.add(request.user)
+
     messages = room.messages.all().order_by('timestamp')
-    rooms = list(Chatroom.objects.filter(members=request.user))
-    annotate_rooms_with_emoji(rooms)
+    rooms = get_rooms_with_meta(request.user)
     room.emoji = get_room_emoji(room.id, room.name)
     users = User.objects.all()
     today = timezone.localdate()
@@ -143,8 +170,7 @@ def start_chat_by_username(request):
 # ─── Index ──────────────────────────────────────────────────────────────────
 @login_required(login_url='login')
 def index(request):
-    rooms = list(Chatroom.objects.filter(members=request.user))
-    annotate_rooms_with_emoji(rooms)
+    rooms = get_rooms_with_meta(request.user)
     users = User.objects.exclude(id=request.user.id)
     contacts = get_contacts_with_meta(request.user)
     context = {
@@ -217,8 +243,7 @@ def chat(request, receiver_id):
     ).order_by('timestamp')
 
     users = User.objects.exclude(id=request.user.id)
-    rooms = list(Chatroom.objects.filter(members=request.user))
-    annotate_rooms_with_emoji(rooms)
+    rooms = get_rooms_with_meta(request.user)
     contacts = get_contacts_with_meta(request.user)
 
     today = timezone.localdate()

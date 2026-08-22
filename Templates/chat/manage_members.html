@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div style="
+  min-height:100vh;
+  background: linear-gradient(135deg, #1E1B2E 0%, #2D2060 50%, #1A1A2E 100%);
+  display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div style="
+    background:#fff; border-radius:20px; padding:40px;
+    width:100%; max-width:500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+
+    <h2 style="font-size:1.3rem; font-weight:700; color:#1A1A2E; margin-bottom:6px;">
+      <i class="fa fa-users" style="color:#6C47FF; margin-right:8px;"></i>
+      Manage Members
+    </h2>
+    <p style="font-size:0.83rem; color:#9490B0; margin-bottom:24px;">
+      Group: <strong style="color:#6C47FF;">{{ room.name }}</strong>
+    </p>
+
+    <ul style="list-style:none; padding:0; margin:0 0 20px;">
+      {% for member in room.members.all %}
+      <li style="
+        display:flex; align-items:center; gap:12px;
+        padding:12px 16px; background:#F8F7FF;
+        border-radius:10px; margin-bottom:8px;">
+        <div style="
+          width:38px; height:38px; border-radius:50%;
+          background:linear-gradient(135deg,#6C47FF,#9B72FF);
+          display:flex; align-items:center; justify-content:center;
+          font-size:14px; font-weight:700; color:#fff; flex-shrink:0;">
+          {{ member.username|first|upper }}
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:0.9rem; font-weight:600; color:#1A1A2E;">{{ member.username }}</div>
+          {% if member == room.admin %}
+          <div style="font-size:0.72rem; color:#6C47FF; font-weight:600;">👑 Admin</div>
+          {% else %}
+          <div style="font-size:0.72rem; color:#9490B0;">Member</div>
+          {% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li style="text-align:center; color:#9490B0; font-size:0.9rem; padding:20px 0;">No members yet.</li>
+      {% endfor %}
+    </ul>
+
+    <div style="display:flex; gap:10px;">
+      <a href="{% url 'add_member' room.id %}" style="
+        flex:1; padding:11px 0; text-align:center;
+        background:linear-gradient(135deg,#6C47FF,#9B72FF);
+        color:#fff; border-radius:8px; font-size:0.85rem;
+        font-weight:700; text-decoration:none;
+        box-shadow:0 4px 14px rgba(108,71,255,0.35);">
+        <i class="fa fa-user-plus" style="margin-right:5px;"></i> Add Member
+      </a>
+      <a href="{% url 'room_chat' room.id %}" style="
+        padding:11px 20px; background:#F3F4F6;
+        color:#6B7280; border-radius:8px; font-size:0.85rem;
+        font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;">
+        <i class="fa fa-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

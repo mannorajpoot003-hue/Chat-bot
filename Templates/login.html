@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NexaChat — Login</title>
+  <meta name="description" content="Login to NexaChat — your premium messaging platform.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <!-- Brand -->
+    <div class="auth-brand">
+      <div class="brand-logo">💬</div>
+      <h1>Nexa<span>Chat</span></h1>
+      <p>Welcome back! Sign in to continue.</p>
+    </div>
+
+    <form method="POST" action="{% url 'login' %}">
+      {% csrf_token %}
+
+      <div class="auth-form-group">
+        <label for="{{ form.username.id_for_label }}">
+          <i class="fa fa-user" style="margin-right:5px; color:var(--brand);"></i> Username
+        </label>
+        <input
+          type="text"
+          id="{{ form.username.id_for_label }}"
+          name="{{ form.username.name }}"
+          value="{{ form.username.value|default:'' }}"
+          placeholder="Enter your username"
+          autocomplete="username"
+        >
+        {% if form.username.errors %}
+          <span class="error-text">{{ form.username.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+
+      <div class="auth-form-group">
+        <label for="{{ form.password.id_for_label }}">
+          <i class="fa fa-lock" style="margin-right:5px; color:var(--brand);"></i> Password
+        </label>
+        <input
+          type="password"
+          id="{{ form.password.id_for_label }}"
+          name="{{ form.password.name }}"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        >
+        {% if form.password.errors %}
+          <span class="error-text">{{ form.password.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div style="background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+          <span class="error-text" style="display:block; color:#DC2626; font-size:0.83rem;">
+            <i class="fa fa-exclamation-circle"></i> {{ form.non_field_errors|join:", " }}
+          </span>
+        </div>
+      {% endif %}
+
+      <button type="submit" class="btn-auth-submit">
+        <i class="fa fa-sign-in-alt" style="margin-right:6px;"></i> Login
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="{% url 'register' %}">Create one</a>
+    </div>
+  </div>
+
+</body>
+</html>

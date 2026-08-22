@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NexaChat — Create Group</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+</head>
+<body>
+<div class="create-room-page">
+  <div class="create-room-card">
+    <h2>
+      <span style="font-size:1.5rem;">🏠</span>
+      Create New Group
+    </h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input
+        type="text"
+        name="room_name"
+        placeholder="e.g. Vibe Tribe, Study Squad…"
+        required
+        autofocus
+      >
+      <button type="submit" class="btn-submit">
+        <i class="fa fa-plus" style="margin-right:7px;"></i> Create &amp; Join
+      </button>
+    </form>
+    <div style="text-align:center; margin-top:18px;">
+      <a href="{% url 'index' %}" style="font-size:0.82rem; color:var(--text-muted); text-decoration:none;">
+        <i class="fa fa-arrow-left" style="margin-right:4px;"></i> Back to Chat
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

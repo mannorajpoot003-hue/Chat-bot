@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="edit-page">
+  <div class="edit-card">
+    <h3><i class="fa fa-pen" style="color:var(--brand); font-size:1rem;"></i> Edit Message</h3>
+    <form method="POST">
+      {% csrf_token %}
+      <textarea name="content" rows="4" placeholder="Edit your message...">{{ message.content }}</textarea>
+      <div class="edit-card-actions">
+        <button type="submit" class="btn-save">
+          <i class="fa fa-check" style="margin-right:5px;"></i> Save Changes
+        </button>
+        <a href="{% url 'chat' message.receiver.id %}" class="btn-cancel">
+          <i class="fa fa-times" style="margin-right:5px;"></i> Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

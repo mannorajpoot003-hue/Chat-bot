@@ -23,3 +23,5 @@ class RoomMessageAdmin(admin.ModelAdmin):
 class ChatroomAdmin(admin.ModelAdmin):
     list_display = ('name', 'admin', )
 
+
+

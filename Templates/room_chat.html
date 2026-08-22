@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+
+    <!-- Brand -->
+    <div class="sidebar-brand" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="brand-icon">💬</div>
+        <div class="brand-name">Nexa<span>Chat</span></div>
+      </div>
+      <!--  New Chat Icon -->
+      <div class="dropdown-new">
+        <i class="fa-regular fa-comment-dots" id="newChatIconBtn" style="cursor: pointer; font-size: 19px; color: var(--text-sidebar);" title="New Chat"></i>
+        <div class="new-chat-dropdown" id="newChatDropdownMenu">
+          <a href="{% url 'create_room' %}"><i class="fa fa-users"></i> New Group</a>
+          <a href="#" id="openNewContactModal"><i class="fa fa-user-plus"></i> New Contact</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔍 Search Bar (Directly under header) -->
+    <div class="sidebar-search">
+      <div class="search-input-wrap">
+        <i class="fa fa-search"></i>
+        <input type="text" id="sidebarSearch" placeholder="Search or start a new chat" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Scrollable list -->
+    <div class="sidebar-body">
+
+      <!-- Groups / Rooms -->
+      <div class="sidebar-section-label">Groups</div>
+      {% for r in rooms %}
+        <a href="{% url 'room_chat' r.id %}" class="room-item searchable {% if room and room.id == r.id %}active{% endif %}" data-name="{{ r.name|lower }}">
+          <div class="room-avatar">{{ r.emoji }}</div>
+          <div class="room-meta">
+            <div class="room-top-row">
+              <span class="room-name">{{ r.name }}</span>
+              <span class="room-badge">Group</span>
+            </div>
+            <div class="room-preview">Group chat</div>
+          </div>
+        </a>
+      {% empty %}
+        <p style="padding: 6px 20px; font-size:0.78rem; color: var(--text-muted);">No groups yet.</p>
+      {% endfor %}
+
+      <!-- Contacts -->
+      <div class="sidebar-section-label" style="margin-top:10px;">Contacts</div>
+      <p class="no-results" id="no-results-msg">No contacts found.</p>
+      <ul class="contact-list">
+        {% for contact in contacts %}
+          <li class="contact-item searchable {% if contact.unread_count > 0 %}has-unread{% endif %}"
+              data-name="{{ contact.user.username|lower }}">
+            <a href="{% url 'chat' contact.user.id %}">
+
+             <div class="avatar av-{{ contact.user.username|first|upper }}">
+               {{ contact.user.username|first|upper }}
+             </div>
+
+
+              <div class="contact-meta">
+                <div class="contact-top-row">
+                  <span class="contact-name">
+                    {{ contact.user.username }}
+                    {% if contact.is_self %}
+                      <span style="font-weight:400; color:var(--brand-light); margin-left:2px;">(You)</span>
+                    {% endif %}
+                  </span>
+                  {% if contact.last_message %}
+                    <span class="contact-time">{{ contact.last_message.timestamp|date:"H:i" }}</span>
+                  {% endif %}
+                </div>
+                <div class="contact-bottom-row">
+                  {% if contact.last_message %}
+                    {% if contact.last_message.sender == request.user and not contact.is_self %}
+                      <span class="contact-preview you">You: {{ contact.last_message.content|truncatechars:26 }}</span>
+                    {% else %}
+                      <span class="contact-preview">{{ contact.last_message.content|truncatechars:28 }}</span>
+                    {% endif %}
+                  {% else %}
+                    {% if contact.is_self %}
+                      <span class="contact-preview" style="color:var(--brand-light);">Message yourself</span>
+                    {% else %}
+                      <span class="contact-preview">Say hello 👋</span>
+                    {% endif %}
+                  {% endif %}
+                  {% if contact.unread_count > 0 %}
+                    <span class="unread-badge">{{ contact.unread_count }}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+
+    </div><!-- /sidebar-body -->
+
+  </aside>
+  <!-- ===== /SIDEBAR ===== -->
+
+
+  <!-- ===== CHAT AREA ===== -->
+  <main class="chat-panel">
+
+    <!-- Top Bar -->
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-header-avatar group" style="background:linear-gradient(135deg,#6C47FF,#9B72FF); border-radius:10px; font-size:1.4rem;">
+          {{ room.emoji }}
+        </div>
+        <div class="chat-header-info">
+          <div class="chat-name">{{ room.name }}</div>
+          <div class="chat-subtitle">🟣 Group · {{ room.members.count }} members</div>
+        </div>
+      </div>
+      <div class="chat-header-actions">
+        {% if room.admin == request.user %}
+        <div class="admin-actions">
+          <a href="{% url 'add_member' room.id %}" class="btn-admin add">
+            <i class="fa fa-user-plus"></i> Add Member
+          </a>
+          <a href="{% url 'manage_members' room.id %}" class="btn-admin manage">
+            <i class="fa fa-users-cog"></i> Manage
+          </a>
+          <a href="{% url 'delete_room' room.id %}" class="btn-admin" style="background:#FEF2F2; color:#EF4444; border:1px solid #FEB2B2; padding: 6px 14px; border-radius: var(--radius-full); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px;" onclick="return confirm('Are you sure you want to delete this group?');">
+            <i class="fa fa-trash"></i> Delete Group
+          </a>
+        </div>
+        {% else %}
+          <a href="{% url 'leave_room' room.id %}" class="btn-admin" style="background:#FEF2F2; color:#EF4444; border:1px solid #FEB2B2; padding: 6px 14px; border-radius: var(--radius-full); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px;" onclick="return confirm('Are you sure you want to leave this group?');">
+            <i class="fa fa-sign-out-alt"></i> Leave Group
+          </a>
+        {% endif %}
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-logout">
+            <i class="fa fa-sign-out-alt"></i> Logout
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages-container">
+      {% for msg in messages %}
+
+        <!-- 📅 Date Separator -->
+        {% ifchanged msg.timestamp|date:"Y-m-d" %}
+          <div class="date-sep">
+            <span>
+              {% if msg.timestamp|date:"Y-m-d" == today|date:"Y-m-d" %}
+                Today
+              {% elif msg.timestamp|date:"Y-m-d" == yesterday|date:"Y-m-d" %}
+                Yesterday
+              {% else %}
+                {{ msg.timestamp|date:"d M Y" }}
+              {% endif %}
+            </span>
+          </div>
+        {% endifchanged %}
+
+        <!-- Message Bubble -->
+        <div class="message {% if msg.sender == request.user %}sent{% else %}received{% endif %}">
+          <div class="bubble">
+            {% if msg.sender != request.user %}
+              <span class="sender-name">{{ msg.sender.username }}</span>
+            {% endif %}
+            <div class="msg-text">{{ msg.content }}</div>
+            <div class="msg-footer">
+              <span class="msg-time">{{ msg.timestamp|date:"H:i" }}</span>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="empty-chat">
+          <div class="empty-icon">{{ room.emoji }}</div>
+          <h4>No messages yet!</h4>
+          <p>Be the first to say something in <strong>{{ room.name }}</strong></p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input Form -->
+    <div class="chat-footer">
+      <form method="POST" class="message-form" id="chat-form">
+        {% csrf_token %}
+        <input type="text" name="content" id="message-input" placeholder="Type a message…" autocomplete="off" required>
+        <button type="submit" class="send-btn" title="Send">
+          <i class="fa fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+
+  </main>
+  <!-- ===== /CHAT AREA ===== -->
+
+</div>
+
+<!-- ===== Custom Modal for New Contact Search ===== -->
+<div class="custom-modal" id="newContactModal">
+  <div class="modal-content" style="max-width: 420px; border-radius: 16px;">
+    <div class="modal-header" style="border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1)); padding-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+        <i class="fa fa-user-plus" style="color: var(--brand);"></i> New Contact / Start Chat
+      </h3>
+      <button class="modal-close-btn" id="closeContactModal">&times;</button>
+    </div>
+    <div class="modal-body" style="padding-top: 16px;">
+      <form action="{% url 'start_chat' %}" method="POST" style="margin-bottom: 16px;">
+        {% csrf_token %}
+        <label for="usernameInput" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">Search by Username</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="usernameInput" name="username" placeholder="Type username..." required autocomplete="off" style="flex: 1; margin: 0;">
+          <button type="submit" class="btn-modal-submit" style="width: auto; padding: 0 16px; margin: 0; white-space: nowrap;">Start Chat</button>
+        </div>
+      </form>
+
+      <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">Or Select Registered User</div>
+      <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+        {% for u in users %}
+          <a href="{% url 'chat' u.id %}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; text-decoration: none; color: inherit; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="avatar av-{{ u.username|first|upper }}" style="width:36px; height:36px; font-size:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--brand); color:#fff; font-weight:700;">{{ u.username|first|upper }}</div>
+              <span style="font-weight: 600; font-size: 0.92rem;">
+                {{ u.username }}
+                {% if u == request.user %}
+                  <span style="color: var(--brand-light); font-size: 0.75rem; font-weight: 400; margin-left: 4px;">(You)</span>
+                {% endif %}
+              </span>
+            </div>
+            <i class="fa fa-comment-dots" style="color: var(--brand-light); opacity: 0.7;"></i>
+          </a>
+        {% empty %}
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">No other users found.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Scroll to bottom
+  window.addEventListener('load', function () {
+    const container = document.getElementById('messages-container');
+    if (container) container.scrollTop = container.scrollHeight;
+  });
+
+  // Close dropdown on click outside
+  window.addEventListener('click', function () {
+    // Close New Chat Dropdown
+    const newChatMenu = document.getElementById('newChatDropdownMenu');
+    if (newChatMenu) newChatMenu.style.display = 'none';
+  });
+
+  // 🔍 New Chat Header Icon Dropdown Toggler
+  const newChatIcon = document.getElementById('newChatIconBtn');
+  const newChatMenu = document.getElementById('newChatDropdownMenu');
+
+  if (newChatIcon && newChatMenu) {
+    newChatIcon.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const current = newChatMenu.style.display;
+      newChatMenu.style.display = (current === 'block') ? 'none' : 'block';
+    });
+  }
+
+  // 💬 Modal Open/Close handlers
+  const openModalBtn = document.getElementById('openNewContactModal');
+  const modal = document.getElementById('newContactModal');
+  const closeModalBtn = document.getElementById('closeContactModal');
+
+  if (openModalBtn && modal) {
+    openModalBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      newChatMenu.style.display = 'none'; // Close dropdown
+      modal.style.display = 'flex';
+      document.getElementById('usernameInput').focus();
+    });
+  }
+
+  if (closeModalBtn && modal) {
+    closeModalBtn.addEventListener('click', function() {
+      modal.style.display = 'none';
+    });
+  }
+
+  // Close modal when clicking outside content area
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  }
+
+  // 🔍 Live Search
+  const searchInput = document.getElementById('sidebarSearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      const query = this.value.toLowerCase().trim();
+      const items = document.querySelectorAll('.searchable');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const name = item.getAttribute('data-name') || '';
+        if (name.includes(query)) {
+          item.style.display = '';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+
+      const noResults = document.getElementById('no-results-msg');
+      if (noResults) {
+        noResults.style.display = (visibleCount === 0 && query.length > 0) ? 'block' : 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}
